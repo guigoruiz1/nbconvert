@@ -303,27 +303,29 @@ class HTMLExporter(TemplateExporter):
         def resources_include_lab_theme(name):
             # Try to find the theme with the given name, looking through the labextensions
             _, theme_path = find_lab_theme(name)
+            if theme_path.suffix == ".css":
+                # If the theme_path is already a CSS file, use resources_include_css
+                return resources_include_css(theme_path)
+            else:
+                with open(theme_path) as file:
+                    data = file.read()
+                
+                # Embed assets (fonts, images...)
+                for asset in os.listdir(theme_path):
+                    local_url = f"url({Path(asset).as_posix()})"
 
-            with open(theme_path) as file:
-                data = file.read()
-            
-            theme_path = theme_path.parent
-            # Embed assets (fonts, images...)
-            for asset in os.listdir(theme_path):
-                local_url = f"url({Path(asset).as_posix()})"
+                    if local_url in data:
+                        mime_type = mimetypes.guess_type(asset)[0]
 
-                if local_url in data:
-                    mime_type = mimetypes.guess_type(asset)[0]
+                        # Replace asset url by a base64 dataurl
+                        with open(theme_path / asset, "rb") as assetfile:
+                            base64_data = base64.b64encode(assetfile.read())
+                            base64_str = base64_data.replace(b"\n", b"").decode("ascii")
 
-                    # Replace asset url by a base64 dataurl
-                    with open(theme_path / asset, "rb") as assetfile:
-                        base64_data = base64.b64encode(assetfile.read())
-                        base64_str = base64_data.replace(b"\n", b"").decode("ascii")
+                            data = data.replace(local_url, f"url(data:{mime_type};base64,{base64_str})")
 
-                        data = data.replace(local_url, f"url(data:{mime_type};base64,{base64_str})")
-
-            code = """<style type="text/css">\n%s</style>""" % data
-            return markupsafe.Markup(code)
+                code = """<style type="text/css">\n%s</style>""" % data
+                return markupsafe.Markup(code)
 
         def resources_include_js(name, module=False):
             """Get the resources include JS for a name. If module=True, import as ES module"""
