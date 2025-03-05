@@ -306,7 +306,8 @@ class HTMLExporter(TemplateExporter):
 
             with open(theme_path) as file:
                 data = file.read()
-
+            
+            theme_path = theme_path.parent
             # Embed assets (fonts, images...)
             for asset in os.listdir(theme_path):
                 local_url = f"url({Path(asset).as_posix()})"
