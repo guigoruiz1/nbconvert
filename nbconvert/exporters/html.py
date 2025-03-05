@@ -41,7 +41,8 @@ def find_lab_theme(theme_name):
     Parameters
     ----------
     theme_name : str
-        The name of the labextension theme you want to find.
+        The name of the theme you want to find. This can be a labextension theme
+        or a theme located in the nbconvert templates directory.
 
     Raises
     ------
@@ -52,27 +53,28 @@ def find_lab_theme(theme_name):
     -------
     theme_name: str
         Full theme name (with scope, if any)
-    labextension_path : Path
-        The path to the found labextension on the system.
+    theme_path : Path
+        The path to the found theme on the system.
     """
-    paths = jupyter_path("labextensions")
+    paths = jupyter_path("labextensions") + jupyter_path("nbconvert", "templates", "lab", "static")
 
     matching_themes = []
     theme_path = None
+
     for path in paths:
         for dirpath, dirnames, filenames in os.walk(path):
-            # If it's a federated labextension that contains themes
             if "package.json" in filenames and "themes" in dirnames:
-                # TODO Find the theme name in the JS code instead?
-                # TODO Find if it's a light or dark theme?
                 with open(Path(dirpath) / "package.json", encoding="utf-8") as fobj:
                     labext_name = json.loads(fobj.read())["name"]
 
                 if labext_name == theme_name or theme_name in labext_name.split("/"):
                     matching_themes.append(labext_name)
-
                     full_theme_name = labext_name
                     theme_path = Path(dirpath) / "themes" / labext_name
+            elif any(filename == f"theme-{theme_name}.css" for filename in filenames):
+                matching_themes.append(theme_name)
+                full_theme_name = theme_name
+                theme_path = Path(dirpath) / f"theme-{theme_name}.css"
 
     if len(matching_themes) == 0:
         msg = f'Could not find lab theme "{theme_name}"'
