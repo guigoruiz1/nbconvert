@@ -36,10 +36,11 @@
 
 {% block notebook_css %}
 {{ resources.include_css("static/index.css") }}
-{% if resources.theme == 'dark' %}
-    {{ resources.include_css("static/theme-dark.css") }}
-{% elif resources.theme == 'light'  %}
-    {{ resources.include_css("static/theme-light.css") }}
+{% set available_themes = ['dark', 'light', 'auto'] %}
+{% set theme_css = "static/theme-" ~ resources.theme ~ ".css" %}
+{{ resources.include_css("static/index.css") }}
+{% if resources.theme in available_themes %}
+    {{ resources.include_css(theme_css) }}
 {% else %}
     {{ resources.include_lab_theme(resources.theme) }}
 {% endif %}
